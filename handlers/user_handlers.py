@@ -1,14 +1,17 @@
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, CallbackQuery
-from numpy.f2py.crackfortran import crackline_re_1
 
 from keyboards.kb_utils import create_inline_kb
+from database.database import process_add_user
 
 router = Router()
 
 @router.message(CommandStart())
 async def process_start_command(message: Message):
+    await process_add_user(message.from_user.id,
+                           message.from_user.username,
+                           message.from_user.full_name)
     start_kb = create_inline_kb(1, 'start')
     await message.answer(text='Legal assistant',
                          reply_markup=start_kb)
