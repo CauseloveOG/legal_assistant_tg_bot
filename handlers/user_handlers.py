@@ -18,29 +18,32 @@ async def process_start_command(message: Message):
                            message.from_user.username,
                            message.from_user.full_name)
     start_kb = create_inline_kb(1, 'menu')
-    await message.answer(text='Legal assistant',
+    await message.answer(text=LEXICON['greeting'],
                          reply_markup=start_kb)
 
 # Команда help
 @router.message(Command(commands='help'))
 async def process_help_command(message: Message):
-    await message.answer('Help')
+    help_kb = create_inline_kb(1, 'menu')
+    await message.answer(text=LEXICON['help'],
+                         reply_markup=help_kb)
 
 # Главное меню
-@router.callback_query(F.data == 'menu')
+@router.callback_query(F.data.in_({'menu', 'back_menu'}))
 async def process_start_button(callback: CallbackQuery, state: FSMContext):
     main_menu_kb = create_inline_kb(1, 'case', 'court_sessions',
                                     'calendar', 'calculators')
-    await callback.message.edit_text(text='Main menu',
+    await callback.message.edit_text(text=f'Добро пожаловать, {callback.from_user.first_name}!\n\n'
+                                          f'{LEXICON['main_menu']}',
                                     reply_markup=main_menu_kb)
     await state.clear()
 
 
 # Вкладка Дела (Главное меню)
-@router.callback_query(F.data.in_({'case', 'yes'}))
+@router.callback_query(F.data.in_({'case', 'yes_delete'}))
 async def process_case_button(callback: CallbackQuery, state: FSMContext):
     # Обработка удаления дела
-    if callback.data == 'yes':
+    if callback.data == 'yes_delete':
         case_name =  await state.get_data()
         await callback.answer(text=await delete_case_from_list(callback.from_user.id, case_name['case_name']))
         await state.clear()
@@ -51,10 +54,10 @@ async def process_case_button(callback: CallbackQuery, state: FSMContext):
         text = LEXICON['not_empty_cases']
         await state.set_state(FSMFillCase.choice_case)
         cases_kb = create_inline_kb(1, *[case['case_name'] for case in cases.values()],
-                                    'add_case', 'menu')
+                                    'add_case', 'back_menu')
     else:
         text = LEXICON['empty_cases']
-        cases_kb = create_inline_kb(1, 'add_case', 'menu')
+        cases_kb = create_inline_kb(1, 'add_case', 'back_menu')
     await callback.message.edit_text(text=text,
                                      reply_markup=cases_kb)
 
@@ -62,21 +65,21 @@ async def process_case_button(callback: CallbackQuery, state: FSMContext):
 # Вкладка Судебные заседания
 @router.callback_query(F.data == 'court_sessions')
 async def process_court_sessions_button(callback: CallbackQuery):
-    back_kb = create_inline_kb(1, 'menu')
+    back_kb = create_inline_kb(1, 'back_menu')
     await callback.message.edit_text(text='Ваши заседания: ',
                                      reply_markup=back_kb)
 
 # Вкладка Календарь
 @router.callback_query(F.data == 'calendar')
 async def process_calendar_button(callback: CallbackQuery):
-    back_kb = create_inline_kb(1, 'menu')
+    back_kb = create_inline_kb(1, 'back_menu')
     await callback.message.edit_text(text='Каленарь: ',
                                      reply_markup=back_kb)
 
 # Вкладка Калькулятор
 @router.callback_query(F.data == 'calculators')
 async def process_calculators_button(callback: CallbackQuery):
-    back_kb = create_inline_kb(1, 'menu')
+    back_kb = create_inline_kb(1, 'back_menu')
     await callback.message.edit_text(text='Выберете калькулятор: ',
                                      reply_markup=back_kb)
 
@@ -113,18 +116,23 @@ async def process_add_case(message: Message, state: FSMContext):
     await state.update_data(court=message.text)
     case_id = await add_case_in_db(message.from_user.id, await state.get_data())
     await state.clear()
-    back_kb = create_inline_kb(1, 'menu')
+    back_kb = create_inline_kb(1, 'back_menu')
     await message.answer(text=f'Готово {case_id}',
                          reply_markup=back_kb)
 
 
 # Получение информации по запрошенному делу
+@router.callback_query(F.data == 'no_cancel')
 @router.callback_query(StateFilter(FSMFillCase.choice_case), F.data)
 async def get_chosen_case(callback: CallbackQuery, state: FSMContext):
-    case_user = await fetch_chosen_case(callback.from_user.id, callback.data)
-    await state.update_data(case_name=callback.data)
-    print(case_user)
-    case_kb = create_inline_kb(1, 'edit_case', 'delete_case', 'case', 'menu')
+    if callback.data == 'no_cancel':
+        case_name = await state.get_data()
+        case_user = await fetch_chosen_case(callback.from_user.id, case_name['case_name'])
+    else:
+        case_user = await fetch_chosen_case(callback.from_user.id, callback.data)
+        await state.update_data(case_name=callback.data)
+        print(case_user)
+    case_kb = create_inline_kb(1, 'edit_case', 'delete_case', 'case', 'back_menu')
     await callback.message.edit_text(text=case_user,
                                      reply_markup=case_kb)
     await state.set_state(FSMFillCase.case)
@@ -164,8 +172,8 @@ async def enter_new_value(message: Message, state: FSMContext):
 @router.callback_query(StateFilter(FSMFillCase.case), F.data == 'delete_case')
 async def process_delete_case(callback: CallbackQuery, state: FSMContext):
     case_name = await state.get_data()
-    case_kb = create_inline_kb(1, 'yes', 'case')
-    await callback.message.edit_text(text=f'Хотите удалить дело {case_name['case_name']}?',
+    case_kb = create_inline_kb(1, 'yes_delete', 'no_cancel')
+    await callback.message.edit_text(text=f'❌ Вы уверены, что хотите удалить дело «{case_name['case_name']}»?',
                                      reply_markup=case_kb)
 
 
