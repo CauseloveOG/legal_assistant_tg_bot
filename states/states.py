@@ -7,5 +7,6 @@ class FSMFillCase(StatesGroup):
     add_court = State()
     choice_case = State()
     case = State()
+    edit_case = State()
 
 

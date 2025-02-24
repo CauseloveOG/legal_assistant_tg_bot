@@ -57,20 +57,39 @@ async def get_user_cases(user_id: int) -> dict[int, dict[str, str | int]] | None
 
 # Получение конкретного дела из списка пользователя
 async def fetch_chosen_case(user_id: int, case_name: str) -> str:
-    async with aiosqlite.connect('database/db.db') as db:
-        user_case = await db.execute('SELECT * FROM cases WHERE (user_id = ? AND case_name = ?)',
-                                     (user_id, case_name))
-        user_case = await user_case.fetchone()
-        user_dict_case = (f'Название дела: {user_case[2]}\n'
-                            f'id дела: {user_case[0]}\n'
-                            f'Название суда: {user_case[4]}\n'
-                            f'Номер дела в суде: {user_case[3]}')
-        return user_dict_case
+    try:
+        async with aiosqlite.connect('database/db.db') as db:
+            user_case = await db.execute('SELECT * FROM cases WHERE (user_id = ? AND case_name = ?)',
+                                         (user_id, case_name))
+            user_case = await user_case.fetchone()
+            user_dict_case = (f'Название дела: {user_case[2]}\n'
+                                f'id дела: {user_case[0]}\n'
+                                f'Название суда: {user_case[4]}\n'
+                                f'Номер дела в суде: {user_case[3]}')
+            return user_dict_case
+    except Exception as e:
+        return f'Дело не найдено {e}'
+
+
+# Редактирование дела из списка
+async def edit_case_from_list(user_id: int, case_name: str, column: str, new_value: str) -> str:
+    db_query = f'UPDATE cases SET {column} = ? WHERE (user_id = ? AND case_name = ?)'
+    try:
+        async with aiosqlite.connect('database/db.db') as db:
+            await db.execute(db_query, (new_value, user_id, case_name))
+            await db.commit()
+            return f'{case_name} успешно отредактирован'
+    except Exception as e:
+        return f'Произошла ошибка {e}'
 
 
 # Удаление дела из списка
-async def delete_case_from_list(user_id: int, case_name: str):
-    async with aiosqlite.connect('database/db.db') as db:
-        await db.execute('DELETE FROM cases WHERE (user_id = ? AND case_name = ?)',
-                         (user_id, case_name))
-        await db.commit()
+async def delete_case_from_list(user_id: int, case_name: str) -> str:
+    try:
+        async with aiosqlite.connect('database/db.db') as db:
+            await db.execute('DELETE FROM cases WHERE (user_id = ? AND case_name = ?)',
+                             (user_id, case_name))
+            await db.commit()
+            return 'Дело успешно удалено'
+    except Exception as e:
+        return f'Произошла ошибка при удалении {e}'

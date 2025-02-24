@@ -4,7 +4,8 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from keyboards.kb_utils import create_inline_kb
-from database.database import process_add_user, get_user_cases, add_case_in_db, fetch_chosen_case, delete_case_from_list
+from database.database import (process_add_user, get_user_cases, add_case_in_db,
+                               fetch_chosen_case, delete_case_from_list, edit_case_from_list)
 from lexicon.lexicon import LEXICON
 from states.states import FSMFillCase
 
@@ -40,9 +41,8 @@ async def process_start_button(callback: CallbackQuery, state: FSMContext):
 async def process_case_button(callback: CallbackQuery, state: FSMContext):
     # Обработка удаления дела
     if callback.data == 'yes':
-        await callback.answer(text='Дело удалено')
         case_name =  await state.get_data()
-        await delete_case_from_list(callback.from_user.id, case_name['case_name'])
+        await callback.answer(text=await delete_case_from_list(callback.from_user.id, case_name['case_name']))
         await state.clear()
 
     # Получение информации о делах, либо об их отсутствии
@@ -80,6 +80,7 @@ async def process_calculators_button(callback: CallbackQuery):
     await callback.message.edit_text(text='Выберете калькулятор: ',
                                      reply_markup=back_kb)
 
+
 # Набор функций для добавления дела в БД таблицу cases
 # используются состояния на каждое отдельное действие.
 # Добавление названия дела
@@ -88,19 +89,22 @@ async def process_add_case_name(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text=LEXICON['enter_case_name'])
     await state.set_state(FSMFillCase.add_case_name)
 
+
 # Добавление номера судебного дела
 @router.message(StateFilter(FSMFillCase.add_case_name))
 async def process_court_case_name(message: Message, state: FSMContext):
     await state.update_data(case_name=message.text)
-    await message.answer(text=LEXICON['court_case_name'])
+    await message.answer(text=LEXICON['enter_court_case_name'])
     await state.set_state(FSMFillCase.add_court_case_name)
+
 
 # Добавление названия суда
 @router.message(StateFilter(FSMFillCase.add_court_case_name))
 async def process_court_name(message: Message, state: FSMContext):
     await state.update_data(court_case_name=message.text)
-    await message.answer(text=LEXICON['court_name'])
+    await message.answer(text=LEXICON['enter_court_name'])
     await state.set_state(FSMFillCase.add_court)
+
 
 # Уведомление о завершении добавления дела и вывод id нового дела
 # с кнопкой о возврате в главное меню.
@@ -113,16 +117,48 @@ async def process_add_case(message: Message, state: FSMContext):
     await message.answer(text=f'Готово {case_id}',
                          reply_markup=back_kb)
 
+
 # Получение информации по запрошенному делу
 @router.callback_query(StateFilter(FSMFillCase.choice_case), F.data)
 async def get_chosen_case(callback: CallbackQuery, state: FSMContext):
     case_user = await fetch_chosen_case(callback.from_user.id, callback.data)
     await state.update_data(case_name=callback.data)
     print(case_user)
-    case_kb = create_inline_kb(1, 'delete_case', 'case', 'menu')
+    case_kb = create_inline_kb(1, 'edit_case', 'delete_case', 'case', 'menu')
     await callback.message.edit_text(text=case_user,
                                      reply_markup=case_kb)
     await state.set_state(FSMFillCase.case)
+
+
+# Редактирование дела
+@router.callback_query(StateFilter(FSMFillCase.case), F.data == 'edit_case')
+async def process_edit_case(callback: CallbackQuery, state: FSMContext):
+    edit_kb = create_inline_kb(1, 'case_name', 'court', 'court_case_name',
+                               'case')
+    await callback.message.edit_text(text='Что хотите редактировать?',
+                                     reply_markup=edit_kb)
+
+
+# Выбор пользователя какой именно параметр необходимо редактировать
+@router.callback_query(StateFilter(FSMFillCase.case), F.data.in_({'case_name', 'court',
+                                                             'court_case_name'}))
+async def process_edit_action(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(action=callback.data)
+    await state.set_state(FSMFillCase.edit_case)
+    await callback.message.edit_text(text='Введите новое значение')
+
+
+# Обработка редактирования и подтверждение результата
+@router.message(StateFilter(FSMFillCase.edit_case))
+async def enter_new_value(message: Message, state: FSMContext):
+    case_keys = await state.get_data()
+    res = await edit_case_from_list(user_id=message.from_user.id, case_name=case_keys['case_name'],
+                                    column=case_keys['action'], new_value=message.text)
+    kb = create_inline_kb(1, 'case')
+    await message.answer(text=res,
+                         reply_markup=kb)
+    await state.clear()
+
 
 # Удаление дела
 @router.callback_query(StateFilter(FSMFillCase.case), F.data == 'delete_case')
