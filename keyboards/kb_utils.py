@@ -29,3 +29,16 @@ def create_inline_kb(width: int,
     kb_builder.row(*buttons, width=width)
 
     return kb_builder.as_markup()
+
+
+def generate_cases_kb(cases: list) -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    case_names = [(case['case_name'], case['id']) for case in cases]
+    for name, case_id in case_names:
+        button = InlineKeyboardButton(text=name, callback_data=f'case_id_{case_id}')
+        keyboard.inline_keyboard.append([button])
+
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text='➡️ Добавить новое дело', callback_data='add_case')])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text='🔙 Вернуться в меню', callback_data='back_menu')])
+
+    return keyboard
