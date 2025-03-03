@@ -61,6 +61,7 @@ LEXICON: dict[str, str] = {
                 'confirm_delete': '❌ Вы уверены, что хотите удалить дело «{}»?',
                 'yes_delete': '✔️ Да, удалить',
                 'no_cancel': '❌ Нет, отмена',
+                'delete_confirmation': 'Дело {case_name} успешно удалено.',
 
         'add_case': '➡️ Добавить новое дело',
             'add_case_name': 'Введите название дела',

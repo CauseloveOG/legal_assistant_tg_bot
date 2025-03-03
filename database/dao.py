@@ -7,7 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from .base import connection
 from .models import User, Case
 
-
+# Проверяет есть ли пользователь в таблице users.
+# Если нет, то добавляет пользователя БД
 @connection
 async def set_user(session, tg_id: int, username: str, full_name: str) -> Optional[User]:
     try:
@@ -23,7 +24,7 @@ async def set_user(session, tg_id: int, username: str, full_name: str) -> Option
         logging.info(f'Ошибка при добавлении пользователя {e}')
         await session.rollback()
 
-
+# Получение списка дел. Возвращает список словарей или пустой список
 @connection
 async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
     try:
@@ -47,7 +48,7 @@ async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
         logging.error(f'Ошибка при получении дел: {e}')
         return []
 
-
+# Метод добавления дела в БД
 @connection
 async def add_case(session, user_id: int, case_name: str, case_number: str, court_name: str) -> Case | None:
     try:
@@ -69,7 +70,7 @@ async def add_case(session, user_id: int, case_name: str, case_number: str, cour
         logging.error(f'Ошибка при добавлении дела: {e}')
         await session.rollback()
 
-
+# Метод радактирования дела в БД
 @connection
 async def edit_case(session, case_id: int, column: str, new_value: str) -> Case | None:
     try:
@@ -88,3 +89,16 @@ async def edit_case(session, case_id: int, column: str, new_value: str) -> Case 
     except SQLAlchemyError as e:
         logging.error(f'Ошибка при обновлении дела: {e}')
         await session.rollback()
+
+
+@connection
+async def delete_case_by_id(session, case_id: int) -> None:
+    try:
+        case = await session.get(Case, case_id)
+        if not case:
+            logging.error(f'Дело с ID {case_id} не найдено.')
+        await session.delete(case)
+        await session.commit()
+        logging.info(f'Дело с ID {case_id} успешно удалено.')
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при удалении дела: {e}')

@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from database.dao import edit_case
-from keyboards.kb_utils import create_inline_kb
+from keyboards.kb_utils import create_inline_kb, generate_cases_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase
 
@@ -29,8 +29,17 @@ async def enter_new_value(callback: CallbackQuery, state: FSMContext):
 # Подтверждение редактирования выбранного параметра
 @upd_case_handlers.message(StateFilter(FSMChoiceCase.edit_case))
 async def get_new_value(message: Message, state: FSMContext):
-    case_keys = await state.get_data()
+    case_data = await state.get_data()
     await state.clear()
-    await edit_case(case_id=case_keys['case_id'], column=case_keys['column'], new_value=message.text)
-    await message.answer(text=f'Дело с названием {case_keys["case_name"]} успешно отредактировано.',
+    await edit_case(case_id=case_data['case']['id'], column=case_data['column'], new_value=message.text)
+    await message.answer(text=f'Дело с названием {case_data['case']["case_name"]} успешно отредактировано.',
                          reply_markup=create_inline_kb(1, 'case'))
+
+
+# Удаление выбранного дела пользователя
+@upd_case_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'delete_case')
+async def delete_case_process(callback: CallbackQuery, state: FSMContext):
+    case_data = await state.get_data()
+    kb = generate_cases_kb([case_data['case']], action='confirm_delete_case')
+    await callback.message.edit_text(text=LEXICON['confirm_delete'].format(case_data['case']['case_name']),
+                                     reply_markup=kb)

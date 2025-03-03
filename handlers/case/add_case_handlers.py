@@ -16,7 +16,7 @@ add_case_handlers = Router()
 #-----------------------------------------------------
 
 # Добавление названия дела
-@add_case_handlers.callback_query(StateFilter(FSMChoiceCase.choice_case), F.data == 'add_case')
+@add_case_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'add_case')
 async def process_add_case_name(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMFillCase.add_case_name)
     await callback.message.edit_text(text=LEXICON['add_case_name'])
