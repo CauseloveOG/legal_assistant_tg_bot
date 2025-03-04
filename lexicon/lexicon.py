@@ -45,7 +45,9 @@ LEXICON: dict[str, str] = {
 
         'chosen_user_case': '⚖️ <i>Дело:</i> {case_name}\n\n'
                             '▫️ <b>Суд:</b> {court_name}\n'
-                            '▫️ <b>Номер дела:</b> {case_number}\n',
+                            '▫️ <b>Номер дела:</b> {case_number}\n'
+                            '▫️ <b>Дата и время заседания:</b> {session_date}',
+        'case_not_found': 'Дело не найдено.',
 
             'add_session_date': '⏰ Добавить дату судебного заседания',
                 'enter_court_session': 'Введите дату судебного заседания в формате ДД.ММ.ГГГГ ЧЧ:ММ',

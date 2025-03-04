@@ -40,10 +40,11 @@ async def process_add_court_name(message: Message, state: FSMContext):
 async def process_checking_added_case(message: Message, state: FSMContext):
     await state.update_data(court_name=message.text)
     case = await state.get_data()
-    await message.answer(text=LEXICON['checking_added'].format(case_name=case.get('case_name'),
-                                                               court_name=case.get('court_name'),
-                                                               case_number=case.get('case_number')),
-                         reply_markup=create_inline_kb(2, 'confirm_added', 'cancel_added'))
+    await message.answer(text=LEXICON['checking_added'].format(
+        case_name=case.get('case_name'),
+        court_name=case.get('court_name'),
+        case_number=case.get('case_number')),
+        reply_markup=create_inline_kb(2, 'confirm_added', 'cancel_added'))
 
 # Уведомление о завершении добавления дела
 # с кнопкой о возврате в главное меню.

@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from database.dao import edit_case
+from database.dao import edit_case, add_session_date_in_db
 from keyboards.kb_utils import create_inline_kb, generate_cases_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase
@@ -43,3 +45,26 @@ async def delete_case_process(callback: CallbackQuery, state: FSMContext):
     kb = generate_cases_kb([case_data['case']], action='confirm_delete_case')
     await callback.message.edit_text(text=LEXICON['confirm_delete'].format(case_data['case']['case_name']),
                                      reply_markup=kb)
+
+
+# Добавление даты судебного заседания
+@upd_case_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'add_session_date')
+async def add_session_date(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(FSMChoiceCase.add_court_session)
+    await callback.message.edit_text(text=LEXICON['enter_court_session'])
+
+
+# Обработка введенной даты судебного заседания
+@upd_case_handlers.message(StateFilter(FSMChoiceCase.add_court_session))
+async def confirm_session_date(message: Message, state: FSMContext):
+    try:
+        date_time = datetime.strptime(message.text, '%d.%m.%Y %H:%M')
+        case_data = await state.get_data()
+        await add_session_date_in_db(case_id=case_data['case']['id'], date=date_time)
+    except ValueError:
+        await message.reply("Неверный формат! Используй: ДД.ММ.ГГГГ ЧЧ:ММ")
+    finally:
+        await state.clear()
+    case_kb = create_inline_kb(1, 'case', 'back_menu')
+    await message.answer(text='Дата добавлена',
+                         reply_markup=case_kb)
