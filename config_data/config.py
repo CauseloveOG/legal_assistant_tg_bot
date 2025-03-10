@@ -6,6 +6,7 @@ from environs import Env
 @dataclass
 class TgBot:
     token: str
+    db_url: str
 
 
 @dataclass
@@ -18,6 +19,7 @@ def load_config(path: str | None=None) -> Config:
     env.read_env(path)
     return Config(
         bot=TgBot(
-            token=env('BOT_TOKEN')
+            token=env('BOT_TOKEN'),
+            db_url=env('DATABASE_SQLITE')
         )
     )

@@ -40,7 +40,7 @@ def generate_cases_kb(cases: list, action: str) -> InlineKeyboardMarkup:
             button = InlineKeyboardButton(text=name, callback_data=f'case_id_{case_id}')
             keyboard.inline_keyboard.append([button])
 
-        keyboard.inline_keyboard.append([InlineKeyboardButton(text='➡️ Добавить новое дело', callback_data='add_case')])
+        keyboard.inline_keyboard.append([InlineKeyboardButton(text='📥 Добавить новое дело', callback_data='add_case')])
         keyboard.inline_keyboard.append([InlineKeyboardButton(text='🔙 Вернуться в меню', callback_data='back_menu')])
 
     # Сценарий построения клавиатуры в случае удаления дела
@@ -51,4 +51,6 @@ def generate_cases_kb(cases: list, action: str) -> InlineKeyboardMarkup:
                                                               callback_data=f'case_id_{case_id}')])
 
     return keyboard
+
+
 

@@ -3,9 +3,14 @@ from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine, AsyncSession
 
-engine = create_async_engine(url='sqlite+aiosqlite:///database/db.sqlite3')
+from config_data.config import Config, load_config
 
-async_session = async_sessionmaker(engine, class_=AsyncSession)
+config: Config = load_config()
+DATABASE_URL = config.bot.db_url
+
+engine = create_async_engine(url=DATABASE_URL)
+
+async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
 class Base(AsyncAttrs, DeclarativeBase):

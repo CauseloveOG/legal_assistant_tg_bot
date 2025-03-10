@@ -26,19 +26,19 @@ async def process_add_case_name(callback: CallbackQuery, state: FSMContext):
 async def process_add_case_number(message: Message, state: FSMContext):
     await state.update_data(case_name=message.text)
     await state.set_state(FSMFillCase.add_case_number)
-    await message.answer(text=LEXICON['add_case_number'])
+    await message.answer(text=LEXICON['add_court_name'])
 
 # Добавление названия суда
 @add_case_handlers.message(StateFilter(FSMFillCase.add_case_number))
 async def process_add_court_name(message: Message, state: FSMContext):
-    await state.update_data(case_number=message.text)
+    await state.update_data(court_name=message.text)
     await state.set_state(FSMFillCase.add_court_name)
-    await message.answer(text=LEXICON['add_court_name'])
+    await message.answer(text=LEXICON['add_case_number'])
 
 # Проверка добавляемого дела
 @add_case_handlers.message(StateFilter(FSMFillCase.add_court_name))
 async def process_checking_added_case(message: Message, state: FSMContext):
-    await state.update_data(court_name=message.text)
+    await state.update_data(case_number=message.text)
     case = await state.get_data()
     await message.answer(text=LEXICON['checking_added'].format(
         case_name=case.get('case_name'),
@@ -55,4 +55,4 @@ async def process_add_case_confirm(callback: CallbackQuery, state: FSMContext):
     await add_case(user_id=callback.from_user.id, case_name=case.get('case_name'),
                    case_number=case.get('case_number'), court_name=case.get('court_name'))
     await callback.message.edit_text(text=LEXICON['successfully_add_case'].format(case.get('case_name')),
-                         reply_markup=create_inline_kb(1, 'back_menu'))
+                         reply_markup=create_inline_kb(1, 'case', 'back_menu'))
