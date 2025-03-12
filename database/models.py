@@ -44,7 +44,7 @@ class Session(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     case_id: Mapped[int] = mapped_column(Integer, ForeignKey('cases.id'), unique=True)
     date: Mapped[datetime] = mapped_column(DateTime)
-    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     case: Mapped['Case'] = relationship(
         'Case',

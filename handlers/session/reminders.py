@@ -22,10 +22,6 @@ async def check_reminder(session, bot: Bot) -> None:
             select(User)
             .filter_by(reminder_enabled=True)
             .options(joinedload(User.cases).joinedload(Case.session))
-            .join(User.cases)
-            .join(Case.session)
-            .filter(Session.date > current_time)
-            .filter(Session.reminder_sent == False)
             )
         result = await session.execute(stmt)
         users = result.unique().scalars().all()
@@ -37,7 +33,7 @@ async def check_reminder(session, bot: Bot) -> None:
 
         for user in users:
             for case in user.cases:
-                if case.session and case.session.date:
+                if case.session and case.session.date and case.session.reminder_sent is not True:
                     reminder_time = case.session.date - timedelta(days=1)
                     if reminder_time <= current_time < case.session.date:
                         message = (
