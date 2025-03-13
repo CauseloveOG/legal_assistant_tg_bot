@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
+from utils.utils import add_to_google_calendar
 from .base import connection
 from .models import User, Case, Session
 
@@ -121,10 +122,17 @@ async def delete_case_by_id(session, case_id: int) -> None:
 
 # Добавление даты заседания в БД
 @connection
-async def add_session_date_in_db(session, case_id: int, date) -> Session | None:
+async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> None:
     try:
+        user = await session.scalar(
+            select(User).filter_by(id=user_id)
+        )
         existing_session = await session.scalar(
-            select(Session).filter_by(case_id=case_id))
+            select(Session).filter_by(case_id=case_id)
+        )
+        case = await session.scalar(
+            select(Case).filter_by(id=case_id)
+        )
 
         if existing_session:
             existing_session.date = date
@@ -138,10 +146,33 @@ async def add_session_date_in_db(session, case_id: int, date) -> Session | None:
             )
             session.add(new_session)
             await session.commit()
-            logging.info(f'Дата судебного заседания по делу с ID {case_id} успешно добавлено.')
-            return new_session
+            logging.info(f'Дата судебного заседания по делу с ID {case_id} успешно добавлена.')
+
+        if user and user.access_token:
+            google_event_id = await add_to_google_calendar(user, existing_session, case)
+            if google_event_id:
+                existing_session.google_event_id = google_event_id
+                await session.commit()
+                logging.info(f"Событие добавлено в Google Calendar: event_id={google_event_id}")
 
     except SQLAlchemyError as e:
         logging.error(f'Ошибка при добавлении даты: {e}')
         await session.rollback()
         return None
+
+# Сохранение токена пользователя
+@connection
+async def save_tokens(session, user_id: int, tokens: dict):
+    try:
+        stmt = select(User).filter_by(id=user_id)
+        result = await session.execute(stmt)
+        user = result.scalars().one_or_none()
+        if user:
+            user.access_token = tokens['access_token']
+            user.refresh_token = tokens.get('refresh_token')
+            await session.commit()
+            logging.info(f"Токены сохранены для user_id={user_id}")
+    except Exception as e:
+        logging.error(f'Ошибка при сохранении токена: {e}')
+
+

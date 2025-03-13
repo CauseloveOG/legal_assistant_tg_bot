@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 from aiogram import Router, F
@@ -17,7 +16,7 @@ from utils.utils import get_sessions_text
 session_handlers = Router()
 
 
-# Добавление даты судебного заседания
+# Добавление или обновление даты судебного заседания
 @session_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data.in_({'add_s_d', 'update_s_d'}))
 async def add_session_date(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMChoiceCase.add_court_session)
@@ -30,7 +29,11 @@ async def confirm_session_date(message: Message, state: FSMContext):
     try:
         date_time = datetime.strptime(message.text, '%d.%m.%Y %H:%M')
         case_data = await state.get_data()
-        await add_session_date_in_db(case_id=case_data['case']['id'], date=date_time)
+        await add_session_date_in_db(
+            user_id=message.from_user.id,
+            case_id=case_data['case']['id'],
+            date=date_time
+        )
     except ValueError:
         await message.reply("Неверный формат! Используй: ДД.ММ.ГГГГ ЧЧ:ММ")
     finally:

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Integer, ForeignKey, DateTime, Boolean
+from sqlalchemy import BigInteger, Integer, ForeignKey, DateTime, Boolean, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .data_base import Base
 
@@ -11,6 +11,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     username: Mapped[str | None]
     full_name: Mapped[str | None]
+    access_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    refresh_token: Mapped[str | None] = mapped_column(String, nullable=True)
     reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
     cases: Mapped[list['Case']] = relationship(
@@ -45,6 +47,7 @@ class Session(Base):
     case_id: Mapped[int] = mapped_column(Integer, ForeignKey('cases.id'), unique=True)
     date: Mapped[datetime] = mapped_column(DateTime)
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    google_event_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     case: Mapped['Case'] = relationship(
         'Case',

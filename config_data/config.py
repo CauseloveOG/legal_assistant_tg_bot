@@ -7,6 +7,9 @@ from environs import Env
 class TgBot:
     token: str
     db_url: str
+    client_id: str
+    client_secret: str
+    redirect_uri: str
 
 
 @dataclass
@@ -20,6 +23,9 @@ def load_config(path: str | None=None) -> Config:
     return Config(
         bot=TgBot(
             token=env('BOT_TOKEN'),
-            db_url=env('DATABASE_SQLITE')
+            db_url=env('DATABASE_SQLITE'),
+            client_id=env('CLIENT_ID'),
+            client_secret=env('CLIENT_SECRET'),
+            redirect_uri=env('REDIRECT_URI')
         )
     )

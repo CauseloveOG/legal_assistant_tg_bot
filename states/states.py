@@ -12,4 +12,6 @@ class FSMChoiceCase(StatesGroup):
     edit_case = State()
     add_court_session = State()
 
+class FSMGoogleAuth(StatesGroup):
+    waiting_for_code = State()
 
