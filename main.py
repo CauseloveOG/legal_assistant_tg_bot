@@ -6,7 +6,6 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
-
 from config_data.config import load_config, Config
 from database.base import create_tables
 from handlers.case.add_case_handlers import add_case_handlers

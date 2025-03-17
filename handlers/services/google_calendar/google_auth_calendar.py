@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery, Message
 from database.dao import save_tokens
 from keyboards.kb_utils import create_inline_kb
 from states.states import FSMGoogleAuth
-from utils.utils import get_auth_url, exchange_code_for_tokens
+from utils.gcalendar_utils import get_auth_url, exchange_code_for_tokens
 
 
 google_auth_calendar = Router()

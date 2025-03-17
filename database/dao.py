@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
-from utils.utils import add_to_google_calendar
+from utils.gcalendar_utils import add_to_google_calendar, update_google_event, delete_google_event
 from .base import connection
 from .models import User, Case, Session
 
@@ -120,9 +120,41 @@ async def delete_case_by_id(session, case_id: int) -> None:
         logging.error(f'Ошибка при удалении дела: {e}')
 
 
+"""По трезвому перепроверить две нижние функции"""
 # Добавление даты заседания в БД
 @connection
 async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> None:
+    try:
+        user = await session.scalar(
+            select(User).filter_by(id=user_id)
+        )
+        case = await session.scalar(
+            select(Case).filter_by(id=case_id)
+        )
+
+        new_session = Session(
+            case_id=case_id,
+            date=date
+        )
+
+        session.add(new_session)
+        await session.commit()
+        if user.access_token:
+            google_event_id = await add_to_google_calendar(user=user, case=case, date=date)
+            if google_event_id:
+                new_session.google_event_id = google_event_id
+                await session.commit()
+                logging.info(f"Событие добавлено в Google Calendar: event_id={google_event_id}")
+        logging.info(f'Дата судебного заседания по делу с ID {case_id} успешно добавлена.')
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при добавлении даты: {e}')
+        await session.rollback()
+        return None
+
+
+# Метод обновления даты заседания в БД и G-calendar
+@connection
+async def update_session_date_in_db(session, user_id: int, case_id: int, date):
     try:
         user = await session.scalar(
             select(User).filter_by(id=user_id)
@@ -133,32 +165,39 @@ async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> N
         case = await session.scalar(
             select(Case).filter_by(id=case_id)
         )
-
-        if existing_session:
-            existing_session.date = date
-            existing_session.reminder_sent = False
-            await session.commit()
-            logging.info(f'Дата заседания для дела с ID {case_id} успешно обновлена.')
-        else:
-            new_session = Session(
-                case_id=case_id,
-                date=date
-            )
-            session.add(new_session)
-            await session.commit()
-            logging.info(f'Дата судебного заседания по делу с ID {case_id} успешно добавлена.')
-
-        if user and user.access_token:
-            google_event_id = await add_to_google_calendar(user, existing_session, case)
+        existing_session.date = date
+        existing_session.reminder_sent = False
+        await session.commit()
+        if user.access_token:
+            google_event_id = await update_google_event(user=user, session=existing_session, case=case, date=date)
             if google_event_id:
                 existing_session.google_event_id = google_event_id
                 await session.commit()
-                logging.info(f"Событие добавлено в Google Calendar: event_id={google_event_id}")
-
+        logging.info(f'Дата заседания для дела с ID {case_id} успешно обновлена.')
     except SQLAlchemyError as e:
         logging.error(f'Ошибка при добавлении даты: {e}')
         await session.rollback()
         return None
+
+
+@connection
+async def delete_session_from_db(session, user_id: int, case_id: int):
+    try:
+        user = await session.get(User, user_id)
+        existing_session = await session.scalar(
+            select(Session).filter_by(case_id=case_id)
+        )
+        if not existing_session:
+            logging.error(f'Заседания для дела с ID {case_id} не найдено.')
+        if existing_session.google_event_id:
+            await delete_google_event(user=user, google_event_id=existing_session.google_event_id)
+        await session.delete(existing_session)
+        await session.commit()
+        logging.info(f'Сведения о заседании по делу с ID {case_id} успешно удалено.')
+
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при удалении сведений о заседании: {e}')
+
 
 # Сохранение токена пользователя
 @connection

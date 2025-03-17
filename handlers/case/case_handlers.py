@@ -54,9 +54,9 @@ async def get_chosen_case(callback: CallbackQuery, state: FSMContext):
     case_info: Optional[str] = format_case_session(case=case)
 
     kb_buttons = ['edit_case', 'delete_case', 'case', 'back_menu']
-    session_buttons = 'update_s_d' if case['session'] else 'add_s_d'
-    kb_buttons.insert(0, session_buttons)
-    case_kb = create_inline_kb(1, *kb_buttons)
+    session_buttons = ['update_s_d', 'delete_s_d'] if case['session'] else ['add_s_d']
+    # kb_buttons.insert(0, session_buttons)
+    case_kb = create_inline_kb(1, optional_button=session_buttons, *kb_buttons)
 
     logging.info(f'Отображено дело {case["case_name"]} для пользователя {callback.from_user.id}')
     await callback.message.edit_text(text=case_info, reply_markup=case_kb)
