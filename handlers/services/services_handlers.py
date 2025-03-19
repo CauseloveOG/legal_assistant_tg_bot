@@ -10,7 +10,7 @@ services_handlers = Router()
 @services_handlers.callback_query(F.data == 'services')
 async def process_start_button(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    main_menu_kb = create_inline_kb(1, 'connect_gcalendar', 'back_menu')
+    main_menu_kb = create_inline_kb(1, 'g_calendar', 'setting_notifications', 'back_menu')
     await callback.message.edit_text(
         text='Выберете сервис:',
         reply_markup=main_menu_kb)

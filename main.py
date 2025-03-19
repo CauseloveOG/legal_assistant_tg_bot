@@ -10,10 +10,12 @@ from config_data.config import load_config, Config
 from database.base import create_tables
 from handlers.case.add_case_handlers import add_case_handlers
 from handlers.case.case_handlers import case_handlers
+from handlers.case.notes_handlers import notes_handlers
 from handlers.case.upd_case_handlers import upd_case_handlers
 from handlers.services.google_calendar.google_auth_calendar import google_auth_calendar
+from handlers.services.notifications.notifications import notification_handlers
 from handlers.services.services_handlers import services_handlers
-from handlers.session.reminders import start_reminder_scheduler
+from handlers.services.notifications.reminders import start_reminder_scheduler
 from handlers.session.session_handlers import session_handlers
 from handlers.start_handlers import start_handlers
 from keyboards.main_menu import set_main_menu
@@ -56,7 +58,9 @@ async def main():
     dp.include_router(upd_case_handlers)
     dp.include_router(session_handlers)
     dp.include_router(services_handlers)
+    dp.include_router(notification_handlers)
     dp.include_router(google_auth_calendar)
+    dp.include_router(notes_handlers)
 
 
     try:

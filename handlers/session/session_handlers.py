@@ -6,8 +6,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.dao import get_user_cases, add_session_date_in_db, update_session_date_in_db, delete_session_from_db
-from handlers.session.reminders import toggle_notification
-from keyboards.kb_utils import create_inline_kb
+from handlers.services.notifications.reminders import toggle_notification
+from keyboards.kb_utils import create_inline_kb, update_case_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase
 from utils.utils import get_sessions_text
@@ -15,20 +15,31 @@ from utils.utils import get_sessions_text
 
 session_handlers = Router()
 
+# Меню взаимодействия с параметром "Судебное заседание"
+@session_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'session_date')
+async def process_session_date(callback: CallbackQuery, state: FSMContext):
+    case = await state.get_data()
+    case_id = case['case']['id']
+    session_buttons = ['update_s_d', 'delete_s_d'] if case['case']['session'] else ['add_s_d']
+    await callback.message.edit_text(text='Здесь вы можете Добавить, Обновить или удалить дату заседания',
+                                     reply_markup=update_case_kb(*session_buttons, case_id=case_id))
 
-# Добавление или обновление даты судебного заседания
+
+# Добавление даты судебного заседания
 @session_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'add_s_d', )
 async def add_session_date(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMChoiceCase.communicate_court_session)
     await state.update_data(state_session=callback.data)
     await callback.message.edit_text(text=LEXICON['enter_court_session'])
 
+# Обновление даты судебного заседания
 @session_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'update_s_d')
 async def update_session_date(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMChoiceCase.communicate_court_session)
     await state.update_data(state_session=callback.data)
     await callback.message.edit_text(text=LEXICON['enter_court_session'])
 
+# Удаление даты судебного заседания
 @session_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'delete_s_d')
 async def delete_session_date(callback: CallbackQuery, state: FSMContext):
     case_data = await state.get_data()
@@ -65,10 +76,6 @@ async def confirm_add_session_date(message: Message, state: FSMContext):
                              reply_markup=case_kb)
 
 
-
-
-
-
 # Функция отправки пользователю информации по всем датам судебных заседаний
 @session_handlers.callback_query(F.data == 'court_sessions')
 async def get_court_sessions(callback: CallbackQuery):
@@ -98,4 +105,4 @@ async def process_setting_notifications(callback: CallbackQuery):
     next_action = 'turn_off' if status_notification else 'turn_on'
 
     await callback.message.edit_text(text=LEXICON['notifications_menu'].format(status_text),
-                                     reply_markup=create_inline_kb(1, next_action, 'back_menu'))
+                                     reply_markup=create_inline_kb(1, next_action, 'services', 'back_menu'))

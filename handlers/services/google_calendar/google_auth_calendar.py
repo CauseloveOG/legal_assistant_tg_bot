@@ -4,13 +4,31 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from database.dao import save_tokens
+from database.dao import save_tokens, get_user_info, toggle_google_sync
 from keyboards.kb_utils import create_inline_kb
+from lexicon.lexicon import LEXICON
 from states.states import FSMGoogleAuth
 from utils.gcalendar_utils import get_auth_url, exchange_code_for_tokens
 
 
 google_auth_calendar = Router()
+
+
+@google_auth_calendar.callback_query(F.data.in_({'g_calendar', 'disable_gcalendar_sync', 'enable_gcalendar_sync'}))
+async def process_google_calendar(callback: CallbackQuery):
+    user = await get_user_info(user_id=callback.from_user.id)
+    if user.access_token:
+        sync_status = await toggle_google_sync(user_id=callback.from_user.id, status=callback.data)
+        button = 'disable_gcalendar_sync' if sync_status else 'enable_gcalendar_sync'
+        status_text = "включена ✔️" if sync_status else "выключена ❌"
+        text = LEXICON['gcalendar_status'].format(status_text)
+    else:
+        button = 'connect_gcalendar'
+        text = 'Подключите Google calendar'
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=create_inline_kb(1, button, 'services', 'back_menu')
+    )
 
 
 # Начало авторизации Google
@@ -21,7 +39,7 @@ async def start_google_auth(callback: CallbackQuery, state: FSMContext):
         'Перейдите по ссылке для подключения Google Calendar:\n'
         f'{auth_url}\n\n'
         'После авторизации введите полученный код в ответное сообщение.',
-        reply_markup=create_inline_kb(1, 'back_menu')
+        reply_markup=create_inline_kb(1, 'services')
     )
     await state.set_state(FSMGoogleAuth.waiting_for_code)
     await callback.answer()

@@ -35,7 +35,7 @@ async def process_help_command(message: Message):
 @start_handlers.callback_query(F.data.in_({'menu', 'back_menu'}))
 async def process_start_button(callback: CallbackQuery, state: FSMContext):
     await state.clear()
-    main_menu_kb = create_inline_kb(1, 'case', 'court_sessions', 'services', 'setting_notifications')
+    main_menu_kb = create_inline_kb(1, 'case', 'court_sessions', 'services')
     await callback.message.edit_text(
         text=LEXICON['main_menu'].format(callback.from_user.first_name),
         reply_markup=main_menu_kb)
@@ -45,7 +45,7 @@ async def process_start_button(callback: CallbackQuery, state: FSMContext):
 @start_handlers.message(Command(commands='menu'))
 async def process_start_button(message: Message, state: FSMContext):
     await state.clear()
-    main_menu_kb = create_inline_kb(1, 'case', 'court_sessions', 'services', 'setting_notifications')
+    main_menu_kb = create_inline_kb(1, 'case', 'court_sessions', 'services')
     await message.answer(
         text=LEXICON['main_menu'].format(message.from_user.first_name),
         reply_markup=main_menu_kb)

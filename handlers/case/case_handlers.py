@@ -10,9 +10,11 @@ from database.dao import get_user_cases, delete_case_by_id, add_case
 from keyboards.kb_utils import generate_cases_kb, create_inline_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase
-from utils.utils import get_case_from_state, format_case_session
+from utils.utils import get_case_from_state, format_case_info
+
 
 case_handlers = Router()
+
 
 # Вкладка Мои дела.
 # Возвращает перечень всех дел в виде инлайн клавиатур
@@ -25,9 +27,7 @@ async def process_case_button(callback: CallbackQuery, state: FSMContext):
         await callback.answer(
             text=LEXICON['delete_confirmation'].format(case_name=case_data['case']['case_name'])
         )
-
     await state.clear()
-
     cases = await get_user_cases(user_id=callback.from_user.id) # Получение списка дел
     await state.set_state(FSMChoiceCase.case)
     await state.update_data(cases_list=cases)
@@ -51,12 +51,10 @@ async def get_chosen_case(callback: CallbackQuery, state: FSMContext):
         return
 
     await state.update_data(case=case)
-    case_info: Optional[str] = format_case_session(case=case)
+    case_info: Optional[str] = format_case_info(case=case)
 
-    kb_buttons = ['edit_case', 'delete_case', 'case', 'back_menu']
-    session_buttons = ['update_s_d', 'delete_s_d'] if case['session'] else ['add_s_d']
-    # kb_buttons.insert(0, session_buttons)
-    case_kb = create_inline_kb(1, optional_button=session_buttons, *kb_buttons)
+    kb_buttons = ['session_date', 'case_note', 'edit_case', 'case', 'back_menu']
+    case_kb = create_inline_kb(1,*kb_buttons)
 
     logging.info(f'Отображено дело {case["case_name"]} для пользователя {callback.from_user.id}')
     await callback.message.edit_text(text=case_info, reply_markup=case_kb)

@@ -115,7 +115,6 @@ async def add_to_google_calendar(user: User, case: Case, date) -> str | None:
 
 # Обновление события в календаре
 async def update_google_event(user: User, case: Case, session: Session, date) -> str | None:
-    # Здесь надо не сессион а дэйт. Переделать!
     if not user.access_token:
         return None
 
@@ -160,7 +159,7 @@ async def update_google_event(user: User, case: Case, session: Session, date) ->
             logging.error(f'Ошибка при обновлении события в Google calendar: {e}')
 
 
-# Удаление события из календаря
+# Удаление события из G-calendar
 async def delete_google_event(user: User, google_event_id: str):
     if not user.access_token or not google_event_id:
         return

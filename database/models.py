@@ -14,6 +14,7 @@ class User(Base):
     access_token: Mapped[str | None] = mapped_column(String, nullable=True)
     refresh_token: Mapped[str | None] = mapped_column(String, nullable=True)
     reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    google_sync_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
     cases: Mapped[list['Case']] = relationship(
         'Case',
@@ -29,6 +30,7 @@ class Case(Base):
     case_name: Mapped[str]
     case_number: Mapped[str | None]
     court_name: Mapped[str | None]
+    case_note: Mapped[str | None]
 
     user: Mapped['User'] = relationship(
         'User',

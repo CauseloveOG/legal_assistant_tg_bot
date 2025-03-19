@@ -1,14 +1,10 @@
 import logging
-from datetime import timedelta
 from typing import List, Optional
 
 from aiogram.fsm.context import FSMContext
 import httpx
 
-from config_data.config import Config, load_config
-from database.base import connection
 from lexicon.lexicon import LEXICON
-from database.models import User, Case, Session
 
 
 # Функция для получения словаря данных запрошенного пользователем дела
@@ -18,12 +14,21 @@ async def get_case_from_state(state: FSMContext, case_id: int) -> Optional[dict]
 
 
 # Функция форматирования информации о деле и заседании в текст
-def format_case_session(case: dict) -> str:
+def format_case_info(case: dict) -> str:
     return LEXICON['chosen_user_case'].format(
         case_name=case['case_name'],
         court_name=case['court_name'],
         case_number=case['case_number'],
-        session_date=case['session']['date'].strftime('%d.%m.%Y %H:%M') if case['session'] else 'не указаны.'
+        session_date=case['session']['date'].strftime('%d.%m.%Y %H:%M') if case['session'] else 'не указаны.',
+        case_note=case['case_note'] if case['case_note'] else 'отсутствует.'
+    )
+
+def format_cases_sessions(case: dict) -> str:
+    return LEXICON['info_for_sessions'].format(
+        case_name=case['case_name'],
+        court_name=case['court_name'],
+        case_number=case['case_number'],
+        session_date=case['session']['date'].strftime('%d.%m.%Y %H:%M')
     )
 
 # Функция сортировки и применения форматирования информации по заседаниям всех дел
@@ -35,7 +40,7 @@ async def get_sessions_text(cases: List[dict]) -> Optional[str]:
 
         sorted_cases = sorted(session_cases, key=lambda x: x['session']['date'])
 
-        txt = [format_case_session(case) for case in sorted_cases]
+        txt = [format_cases_sessions(case) for case in sorted_cases]
         return '\n\n'.join(txt)
 
     except Exception as e:

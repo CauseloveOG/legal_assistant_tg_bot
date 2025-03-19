@@ -10,6 +10,7 @@ class FSMChoiceCase(StatesGroup):
     choice_case = State()
     case = State()
     edit_case = State()
+    add_note = State()
     communicate_court_session = State()
 
 class FSMGoogleAuth(StatesGroup):

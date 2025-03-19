@@ -9,7 +9,7 @@ from aiogram import Bot
 from sqlalchemy.orm import joinedload
 
 from database.base import connection
-from database.models import Session, Case, User
+from database.models import Case, User
 
 
 # Проверка уведомлений для отправки

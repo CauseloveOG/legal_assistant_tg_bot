@@ -28,6 +28,16 @@ async def set_user(session, tg_id: int, username: str, full_name: str) -> Option
         await session.rollback()
 
 
+@connection
+async def get_user_info(session, user_id: int) -> User | None:
+    try:
+        user = await session.scalar(select(User).filter_by(id=user_id))
+        return user
+    except Exception as e:
+        logging.error(f'Ошибка при получении информации о пользователе: {e}')
+        return None
+
+
 # Получение всех дел пользователя
 @connection
 async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
@@ -51,7 +61,8 @@ async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
                 'court_name': case.court_name,
                 'session': {
                     'date': case.session.date
-                } if case.session else None
+                } if case.session else None,
+                'case_note': case.case_note
             }
             for case in cases
         ]
@@ -105,6 +116,36 @@ async def edit_case(session, case_id: int, column: str, new_value: str) -> Case 
         logging.error(f'Ошибка при обновлении дела: {e}')
         await session.rollback()
 
+# Добавление или обновление заметки в БД
+@connection
+async def add_note_in_db(session, case_id: int, note: str) -> None:
+    try:
+        case = await session.scalar(select(Case).filter_by(id=case_id))
+        if not case:
+            logging.error(f'Дело с ID {case_id} не найдено.')
+            return None
+        case.case_note = note
+        await session.commit()
+        logging.info(f'Заметка для дела с ID {case_id} успешно добавлена.')
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при добавлении заметки: {e}')
+        await session.rollback()
+
+# Удаление заметки из БД
+@connection
+async def delete_note_from_db(session, case_id: int) -> None:
+    try:
+        case = await session.scalar(select(Case).filter_by(id=case_id))
+        if not case:
+            logging.error(f'Дело с ID {case_id} не найдено.')
+            return None
+        case.case_note = None
+        await session.commit()
+        logging.info(f'Заметка для дела с ID {case_id} успешно удалена.')
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при удалении заметки: {e}')
+
+
 
 # Метод удаления дела из БД
 @connection
@@ -120,7 +161,6 @@ async def delete_case_by_id(session, case_id: int) -> None:
         logging.error(f'Ошибка при удалении дела: {e}')
 
 
-"""По трезвому перепроверить две нижние функции"""
 # Добавление даты заседания в БД
 @connection
 async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> None:
@@ -179,7 +219,7 @@ async def update_session_date_in_db(session, user_id: int, case_id: int, date):
         await session.rollback()
         return None
 
-
+# Удаление даты заседания из БД
 @connection
 async def delete_session_from_db(session, user_id: int, case_id: int):
     try:
@@ -214,4 +254,26 @@ async def save_tokens(session, user_id: int, tokens: dict):
     except Exception as e:
         logging.error(f'Ошибка при сохранении токена: {e}')
 
+
+@connection
+async def toggle_google_sync(session, user_id: int, status: str) -> bool | None:
+    try:
+        user = await session.scalar(select(User).filter_by(id=user_id))
+
+        if not user:
+            logging.error(f"Пользователь с ID {user_id} не найден.")
+            return None
+
+        match status:
+            case 'enable_gcalendar_sync':
+                user.google_sync_enabled = True
+                logging.info(f"Синхронизация с Google Calendar включена для user_id={user_id}")
+            case 'disable_gcalendar_sync':
+                user.google_sync_enabled = False
+                logging.info(f"Синхронизация с Google Calendar отключена для user_id={user_id}")
+        await session.commit()
+
+        return user.google_sync_enabled
+    except Exception as e:
+        logging.error(f'Ошибка при переключении синхронизации: {e}')
 

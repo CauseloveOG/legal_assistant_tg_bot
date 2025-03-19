@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from database.dao import edit_case
-from keyboards.kb_utils import create_inline_kb, generate_cases_kb
+from keyboards.kb_utils import create_inline_kb, generate_cases_kb, update_case_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase
 
@@ -14,11 +14,12 @@ upd_case_handlers = Router()
 
 # Меню для выбора какой параметр необходимо отредактировать
 @upd_case_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'edit_case')
-async def start_edit_case(callback: CallbackQuery):
-    edit_kb = create_inline_kb(1, 'ed_case_name', 'ed_case_number', 'ed_court_name',
-                               'case')
+async def start_edit_case(callback: CallbackQuery, state: FSMContext):
+    case_data = await state.get_data()
+    case_id = case_data['case']['id']
+    kb = update_case_kb('ed_case_name', 'ed_case_number', 'ed_court_name', 'delete_case', case_id=case_id)
     await callback.message.edit_text(text=LEXICON['choice_edit_case'],
-                                     reply_markup=edit_kb)
+                                     reply_markup=kb)
 
 
 # Запрос нового значения от пользователя
@@ -46,4 +47,6 @@ async def delete_case_process(callback: CallbackQuery, state: FSMContext):
     kb = generate_cases_kb([case_data['case']], action='confirm_delete_case')
     await callback.message.edit_text(text=LEXICON['confirm_delete'].format(case_data['case']['case_name']),
                                      reply_markup=kb)
+
+
 

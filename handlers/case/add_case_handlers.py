@@ -11,10 +11,6 @@ from states.states import FSMFillCase, FSMChoiceCase
 add_case_handlers = Router()
 
 
-# Набор функций для добавления дела в БД таблицу cases
-# используются состояния на каждое отдельное действие.
-#-----------------------------------------------------
-
 # Добавление названия дела
 @add_case_handlers.callback_query(StateFilter(FSMChoiceCase.case), F.data == 'add_case')
 async def process_add_case_name(callback: CallbackQuery, state: FSMContext):
@@ -45,6 +41,7 @@ async def process_checking_added_case(message: Message, state: FSMContext):
         court_name=case.get('court_name'),
         case_number=case.get('case_number')),
         reply_markup=create_inline_kb(2, 'confirm_added', 'cancel_added'))
+
 
 # Уведомление о завершении добавления дела
 # с кнопкой о возврате в главное меню.
