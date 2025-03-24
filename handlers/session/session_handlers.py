@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message
 
 from database.dao import get_user_cases, add_session_date_in_db, update_session_date_in_db, delete_session_from_db
 from handlers.services.notifications.reminders import toggle_notification
@@ -53,6 +53,7 @@ async def delete_session_date(callback: CallbackQuery, state: FSMContext):
 @session_handlers.message(StateFilter(FSMChoiceCase.communicate_court_session))
 async def confirm_add_session_date(message: Message, state: FSMContext):
     try:
+        kb = ['case', 'back_menu']
         date_time = datetime.strptime(message.text, '%d.%m.%Y %H:%M')
         case_data = await state.get_data()
         if case_data.get('state_session') == 'add_s_d':
@@ -62,16 +63,18 @@ async def confirm_add_session_date(message: Message, state: FSMContext):
                 date=date_time
             )
         elif case_data.get('state_session') == 'update_s_d':
-            await update_session_date_in_db(
+            res = await update_session_date_in_db(
                 user_id=message.from_user.id,
                 case_id=case_data['case']['id'],
                 date=date_time
             )
+            # if res is None:
+            #     kb.insert(0, 'connect_gcalendar')
     except ValueError:
         await message.reply("Неверный формат! Используй: ДД.ММ.ГГГГ ЧЧ:ММ")
     finally:
         await state.clear()
-        case_kb = create_inline_kb(1, 'case', 'back_menu')
+        case_kb = create_inline_kb(1, *kb)
         await message.answer(text=LEXICON['confirm_add_session'],
                              reply_markup=case_kb)
 

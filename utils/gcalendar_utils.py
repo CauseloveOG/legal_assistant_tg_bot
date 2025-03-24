@@ -5,7 +5,7 @@ import httpx
 from config_data.config import Config, load_config
 from database.base import connection
 from database.models import User, Session, Case
-
+from keyboards.kb_utils import create_inline_kb
 
 config: Config = load_config()
 
@@ -41,21 +41,32 @@ async def exchange_code_for_tokens(code: str) -> dict:
 
 # Обновление токена пользователя
 @connection
-async def refresh_access_token(session, user: User) -> str:
+async def refresh_access_token(session, user: User) -> str | None:
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": config.bot.client_id,
-                "client_secret": config.bot.client_secret,
-                "refresh_token": user.refresh_token,
-                "grant_type": "refresh_token",
-            }
-        )
-        tokens = response.json()
-        user.access_token = tokens['access_token']
-        await session.commit()
-        return tokens['access_token']
+        try:
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": config.bot.client_id,
+                    "client_secret": config.bot.client_secret,
+                    "refresh_token": user.refresh_token,
+                    "grant_type": "refresh_token",
+                }
+            )
+            if response.status_code != 200:
+                logging.error(f"Ошибка обновления токена: {response.status_code}, ответ: {response.text}")
+                return None
+
+            tokens = response.json()
+            if "access_token" not in tokens:
+                logging.error(f"В ответе отсутствует access_token: {tokens}")
+                return None
+
+            user.access_token = tokens['access_token']
+            await session.commit()
+            return tokens['access_token']
+        except Exception as e:
+            logging.error(f'Ошибка в refresh_access_token: {e}')
 
 
 # Добавление события в Гугл календарь
@@ -143,10 +154,15 @@ async def update_google_event(user: User, case: Case, session: Session, date) ->
                     json=event
                 )
                 if response.status_code == 401:
+                    logging.info(f'Токен истек, обновляем.')
                     access_token = await refresh_access_token(user)
+                    if not access_token:
+                        logging.error(f"Не удалось обновить токен для user_id={user.id}")
+                        return None
+
                     headers['Authorization'] = f'Bearer {access_token}'
                     response = await client.patch(
-                        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+                        f"https://www.googleapis.com/calendar/v3/calendars/primary/events/{session.google_event_id}",
                         headers=headers,
                         json=event
                     )
