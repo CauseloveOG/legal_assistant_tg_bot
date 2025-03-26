@@ -34,9 +34,10 @@ async def enter_new_value(callback: CallbackQuery, state: FSMContext):
 @upd_case_handlers.message(StateFilter(FSMChoiceCase.edit_case))
 async def get_new_value(message: Message, state: FSMContext):
     case_data = await state.get_data()
+    case_name = case_data['case']['case_name']
     await state.clear()
     await edit_case(case_id=case_data['case']['id'], column=case_data['column'], new_value=message.text)
-    await message.answer(text=f'Дело с названием {case_data['case']["case_name"]} успешно отредактировано.',
+    await message.answer(text=f'Дело с названием {case_name} успешно отредактировано.',
                          reply_markup=create_inline_kb(1, 'case'))
 
 
