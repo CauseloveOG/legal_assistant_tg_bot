@@ -17,7 +17,7 @@ async def process_session_date(callback: CallbackQuery, state: FSMContext):
     case = await state.get_data()
     case_id = case['case']['id']
     note_buttons = ['update_note', 'delete_note'] if case['case']['case_note'] else ['add_note']
-    await callback.message.edit_text(text='Здесь вы можете Добавить, Обновить или удалить дату заседания',
+    await callback.message.edit_text(text='Здесь вы можете Добавить, Обновить или удалить заметку:',
                                      reply_markup=update_case_kb(*note_buttons, case_id=case_id))
 
 
