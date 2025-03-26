@@ -32,9 +32,10 @@ async def add_note_to_case(callback: CallbackQuery, state: FSMContext):
 @notes_handlers.message(StateFilter(FSMChoiceCase.add_note))
 async def get_new_value(message: Message, state: FSMContext):
     case_data = await state.get_data()
+    case_name = case_data['case']['case_name']
     await state.clear()
     await add_note_in_db(case_id=case_data['case']['id'], note=message.text)
-    await message.answer(text=f'Заметка для дела {case_data['case']["case_name"]} успешно добавлена.',
+    await message.answer(text=f'Заметка для дела {case_name} успешно добавлена.',
                          reply_markup=create_inline_kb(1, 'case'))
 
 
