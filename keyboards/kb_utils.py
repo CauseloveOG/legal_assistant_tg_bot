@@ -50,26 +50,25 @@ def create_inline_kb(width: int,
 
     return kb_builder.as_markup()
 
-'''Переделать, разделить'''
-def generate_cases_kb(cases: list, action: str) -> InlineKeyboardMarkup:
+# функция для генерации инлайн клавиатуры в виде списка дел
+def generate_cases_kb(cases: list) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-    case_data = [(case['case_name'], case['id']) for case in cases]
-    # Сценарий построения клавиатуры в случае запроса списка дел
-    if action == 'get_case_list':
-        for name, case_id in case_data:
-            button = InlineKeyboardButton(text=name, callback_data=f'case_id_{case_id}')
-            keyboard.inline_keyboard.append([button])
+    case_data = [(case.get('case_name'), case.get('id')) for case in cases]
+    for name, case_id in case_data:
+        button = InlineKeyboardButton(text=name, callback_data=f'case_id_{case_id}')
+        keyboard.inline_keyboard.append([button])
 
-        keyboard.inline_keyboard.append([InlineKeyboardButton(text='📥 Добавить новое дело', callback_data='add_case')])
-        keyboard.inline_keyboard.append([InlineKeyboardButton(text='🔙 Вернуться в меню', callback_data='back_menu')])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text='📥 Добавить новое дело', callback_data='add_case')])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text='🔙 Вернуться в меню', callback_data='back_menu')])
 
-    # Сценарий построения клавиатуры в случае удаления дела
-    elif action == 'confirm_delete_case':
-        case_id = case_data[0][-1]
-        keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['yes_delete'], callback_data='yes_delete')])
-        keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['no_cancel'],
-                                                              callback_data=f'case_id_{case_id}')])
+    return keyboard
 
+# Генерация клавиатуры при удалении дела
+def delete_case_kb(case_id: int):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['yes_delete'], callback_data='yes_delete')])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['no_cancel'],
+                                                          callback_data=f'case_id_{case_id}')])
     return keyboard
 
 
@@ -109,8 +108,13 @@ def update_case_kb(*args, case_id: int) -> InlineKeyboardMarkup:
             callback_data=button))
 
     kb_builder.row(*buttons, width=2)
-    back_button = InlineKeyboardButton(text=LEXICON['back'], callback_data=f'case_id_{case_id}')
+    back_button = InlineKeyboardButton(text=LEXICON['back'], callback_data=f'back_case_id_{case_id}')
     kb_builder.row(back_button, width=1)
 
     return kb_builder.as_markup()
 
+def back_and_menu_kb(case_id: int) -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['back'], callback_data=f'case_id_{case_id}')])
+    keyboard.inline_keyboard.append([InlineKeyboardButton(text=LEXICON['menu'], callback_data='menu')])
+    return keyboard

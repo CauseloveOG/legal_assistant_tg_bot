@@ -6,7 +6,6 @@ from keyboards.kb_utils import create_inline_kb
 from lexicon.lexicon import LEXICON
 
 
-
 notification_handlers = Router()
 
 # Меню настройки уведомлений

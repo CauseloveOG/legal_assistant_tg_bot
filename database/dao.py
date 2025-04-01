@@ -24,7 +24,7 @@ async def set_user(session, tg_id: int, username: str, full_name: str) -> Option
         else:
             logging.info(f'Пользователь с ID {tg_id} найден!')
     except SQLAlchemyError as e:
-        logging.info(f'Ошибка при добавлении пользователя {e}')
+        logging.error(f'Ошибка при добавлении пользователя {e}')
         await session.rollback()
 
 
@@ -71,6 +71,36 @@ async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
     except SQLAlchemyError as e:
         logging.error(f'Ошибка при получении дел: {e}')
         return []
+
+
+@connection
+async def get_user_chosen_case(session, case_id: int, user_id: int) -> dict | None:
+    try:
+        case = await session.scalar(
+            select(Case)
+            .filter_by(user_id=user_id, id=case_id)
+            .options(joinedload(Case.session))
+        )
+        if not case:
+            logging.error(f'Дело с ID {case_id} не найдено.')
+            return None
+
+        case = {
+            'id': case.id,
+            'case_name': case.case_name,
+            'case_number': case.case_number,
+            'court_name': case.court_name,
+            'session': {
+                'date': case.session.date
+            } if case.session else None,
+            'case_note': case.case_note
+        }
+        logging.info(f'Дело с ID {case_id} найдено.')
+        return case
+    except SQLAlchemyError as e:
+        logging.error(f'Ошибка при обновлении дела: {e}')
+        return None
+
 
 
 # Метод добавления дела в БД
@@ -168,6 +198,7 @@ async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> N
         user = await session.scalar(
             select(User).filter_by(id=user_id)
         )
+
         case = await session.scalar(
             select(Case).filter_by(id=case_id)
         )
@@ -179,7 +210,7 @@ async def add_session_date_in_db(session, user_id: int, case_id: int, date) -> N
 
         session.add(new_session)
         await session.commit()
-        if user.access_token:
+        if user.access_token and user.google_sync_enabled:
             google_event_id = await add_to_google_calendar(user=user, case=case, date=date)
             if google_event_id:
                 new_session.google_event_id = google_event_id
@@ -208,7 +239,7 @@ async def update_session_date_in_db(session, user_id: int, case_id: int, date):
         existing_session.date = date
         existing_session.reminder_sent = False
         await session.commit()
-        if user.access_token:
+        if user.access_token and user.google_sync_enabled:
             google_event_id = await update_google_event(user=user, session=existing_session, case=case, date=date)
             if google_event_id:
                 existing_session.google_event_id = google_event_id
@@ -223,13 +254,15 @@ async def update_session_date_in_db(session, user_id: int, case_id: int, date):
 @connection
 async def delete_session_from_db(session, user_id: int, case_id: int):
     try:
-        user = await session.get(User, user_id)
+        user = await session.scalar(
+            select(User).filter_by(id=user_id)
+        )
         existing_session = await session.scalar(
             select(Session).filter_by(case_id=case_id)
         )
         if not existing_session:
             logging.error(f'Заседания для дела с ID {case_id} не найдено.')
-        if existing_session.google_event_id:
+        if existing_session.google_event_id and user.google_sync_enabled:
             await delete_google_event(user=user, google_event_id=existing_session.google_event_id)
         await session.delete(existing_session)
         await session.commit()
