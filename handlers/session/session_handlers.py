@@ -6,7 +6,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from database.dao import get_user_cases, add_session_date_in_db, update_session_date_in_db, delete_session_from_db
-from handlers.services.notifications.reminders import toggle_notification
 from keyboards.kb_utils import create_inline_kb, update_case_kb, back_and_menu_kb
 from lexicon.lexicon import LEXICON
 from states.states import FSMChoiceCase

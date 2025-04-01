@@ -61,7 +61,7 @@ async def get_chosen_case(callback: CallbackQuery, state: FSMContext):
         await state.update_data(case=case)
         # Форматирование в итоговый текс информации по выбранному делу
         case_info: str | None = format_case_info(case=case)
-        logging.info(f'Отображено дело {case.get('case_name')} для пользователя {callback.from_user.id}')
+        logging.info(f'Отображено дело для пользователя {callback.from_user.id}')
         await callback.message.edit_text(text=case_info, reply_markup=case_kb)
 
 
