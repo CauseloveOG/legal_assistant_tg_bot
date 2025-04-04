@@ -27,13 +27,13 @@ async def set_user(session, tg_id: int, username: str, full_name: str) -> Option
         logging.error(f'Ошибка при добавлении пользователя {e}')
         await session.rollback()
 
-
+# Получение информации о пользователе
 @connection
 async def get_user_info(session, user_id: int) -> User | None:
     try:
         user = await session.scalar(select(User).filter_by(id=user_id))
         return user
-    except Exception as e:
+    except SQLAlchemyError as e:
         logging.error(f'Ошибка при получении информации о пользователе: {e}')
         return None
 
@@ -72,7 +72,7 @@ async def get_user_cases(session, user_id: int) -> List[Dict[str, Any]]:
         logging.error(f'Ошибка при получении дел: {e}')
         return []
 
-
+# Получение выбранного дела пользователя
 @connection
 async def get_user_chosen_case(session, case_id: int, user_id: int) -> dict | None:
     try:
@@ -100,7 +100,6 @@ async def get_user_chosen_case(session, case_id: int, user_id: int) -> dict | No
     except SQLAlchemyError as e:
         logging.error(f'Ошибка при обновлении дела: {e}')
         return None
-
 
 
 # Метод добавления дела в БД
@@ -288,6 +287,7 @@ async def save_tokens(session, user_id: int, tokens: dict):
         logging.error(f'Ошибка при сохранении токена: {e}')
 
 
+# Переключение синхронизации с Google Calendar
 @connection
 async def toggle_google_sync(session, user_id: int, status: str) -> bool | None:
     try:
@@ -309,4 +309,5 @@ async def toggle_google_sync(session, user_id: int, status: str) -> bool | None:
         return user.google_sync_enabled
     except Exception as e:
         logging.error(f'Ошибка при переключении синхронизации: {e}')
+
 

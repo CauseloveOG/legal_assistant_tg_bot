@@ -6,6 +6,7 @@ from environs import Env
 @dataclass
 class TgBot:
     token: str
+    admin_id: int
     db_url: str
     client_id: str
     client_secret: str
@@ -23,6 +24,7 @@ def load_config(path: str | None=None) -> Config:
     return Config(
         bot=TgBot(
             token=env('BOT_TOKEN'),
+            admin_id=env('ADMIN_ID'),
             db_url=env('DATABASE_SQLITE'),
             client_id=env('CLIENT_ID'),
             client_secret=env('CLIENT_SECRET'),

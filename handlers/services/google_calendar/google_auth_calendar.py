@@ -14,6 +14,7 @@ from utils.gcalendar_utils import get_auth_url, exchange_code_for_tokens
 google_auth_calendar = Router()
 
 
+# Обработчик кнопок Google Calendar
 @google_auth_calendar.callback_query(F.data.in_({'g_calendar', 'disable_gcalendar_sync', 'enable_gcalendar_sync'}))
 async def process_google_calendar(callback: CallbackQuery):
     user = await get_user_info(user_id=callback.from_user.id)
@@ -32,14 +33,14 @@ async def process_google_calendar(callback: CallbackQuery):
 
 
 # Начало авторизации Google
-@google_auth_calendar.callback_query(F.data == 'connect_gcalendar')
+@google_auth_calendar.callback_query(F.data.in_({'connect_gcalendar', 'google_settings'}))
 async def start_google_auth(callback: CallbackQuery, state: FSMContext):
     auth_url = await get_auth_url(callback.from_user.id)
     await callback.message.edit_text(
         'Перейдите по ссылке для подключения Google Calendar:\n'
         f'{auth_url}\n\n'
         'После авторизации введите полученный код в ответное сообщение.',
-        reply_markup=create_inline_kb(1, 'services')
+        reply_markup=create_inline_kb(1, 'services', 'back_menu')
     )
     await state.set_state(FSMGoogleAuth.waiting_for_code)
     await callback.answer()

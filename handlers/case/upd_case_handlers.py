@@ -56,6 +56,3 @@ async def delete_case_process(callback: CallbackQuery, state: FSMContext):
     case_kb = delete_case_kb(case_id=case_id)
     await callback.message.edit_text(text=LEXICON['confirm_delete'].format(case_name),
                                      reply_markup=case_kb)
-
-
-

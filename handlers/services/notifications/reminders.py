@@ -37,8 +37,11 @@ async def check_reminder(session, bot: Bot) -> None:
                     reminder_time = case.session.date - timedelta(days=1)
                     if reminder_time <= current_time < case.session.date:
                         message = (
-                            f"Напоминание: Завтра, {case.session.date.strftime('%d.%m.%Y %H:%M')}, "
-                            f"состоится заседание по делу '{case.case_name}' в {case.court_name}."
+                            f"Напоминание:\n"
+                            f"Завтра, {case.session.date.strftime('%d.%m.%Y %H:%M')},\n"
+                            f"состоится заседание по делу <b>{case.case_name}</b>\b"
+                            f"Суд: {case.court_name}.\n"
+                            f"Номер дела: {case.case_number}"
                         )
                         try:
                             await bot.send_message(chat_id=user.id, text=message)
@@ -74,6 +77,7 @@ async def toggle_notification(session, user_id: int, status: str) -> Optional[bo
         return None
 
 
+# Запуск планировщика
 async def start_reminder_scheduler(bot: Bot):
     scheduler = AsyncIOScheduler(event_loop=asyncio.get_running_loop())
     scheduler.add_job(check_reminder, 'interval', minutes=15, args=(bot,))

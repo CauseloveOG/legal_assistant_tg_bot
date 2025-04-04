@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config_data.config import load_config, Config
 from database.base import create_tables
+from handlers.admin.admin_handlers import admin_handlers
 from handlers.case.add_case_handlers import add_case_handlers
 from handlers.case.case_handlers import case_handlers
 from handlers.case.notes_handlers import notes_handlers
@@ -61,6 +62,7 @@ async def main():
     dp.include_router(notification_handlers)
     dp.include_router(google_auth_calendar)
     dp.include_router(notes_handlers)
+    dp.include_router(admin_handlers)
 
 
     try:
